@@ -14,6 +14,10 @@ from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
 from sklearn import preprocessing
 from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.metrics import mean_squared_error
+from sklearn.linear_model import LinearRegression
 from keras.utils import to_categorical
 from keras.models import Sequential
 from keras.layers import Dense
@@ -132,19 +136,46 @@ y = y.values.reshape(-1, 1)
 print(y.shape)
 print()
 
-X = all_matches[['date', 'home_team', 'away_team', 'home_score', 'away_score',
+X = all_matches[['home_team', 'away_team', 'home_score', 'away_score',
        'tournament', 'city', 'country', 'neutral', 'winner', 'loser',
        'winners_score', 'score_difference', 'penalties']]
 X.values
 print(X.shape)
 # print(X.dtypes)
 
+label_encoder = LabelEncoder()
+label_encoder.fit(y)
+encoded_y = label_encoder.transform(y)
+one_hot_y = to_categorical(encoded_y)
+# print(one_hot_y)
+
+model = LinearRegression()
+model.fit(X, y)
+
+X = pd.get_dummies(X)
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+X_scaler = StandardScaler().fit(X_train)
+y_scaler = StandardScaler().fit(y_train)
+X_train_scaled = X_scaler.transform(X_train)
+X_test_scaled = X_scaler.transform(X_test)
+y_train_scaled = y_scaler.transform(y_train)
+y_test_scaled = y_scaler.transform(y_test)
+
+predictions = model.predict(X_test_scaled)
+MSE = mean_squared_error(y_test_scaled, predictions)
+r2 = model.score(X_test_scaled, y_test_scaled)
+
+print(f"MSE: {MSE}, R2: {r2}")
+
+
+
+'''
 ### --- creating training and testing datasets ---
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=1)
 
 ### --- data preprocessing; scaling the data ---
 X_scaler = StandardScaler().fit(X_train)
-# X_scaler = preprocessing.PowerTransformer(method='box-cox', standardize=False).fit(X_train)
+# X_scaler = preprocessing.PowerTransformer(method='box-cox', standardize=True).fit(X_train)
 
 X_train_scaled = X_scaler.transform(X_train)
 X_test_scaled = X_scaler.transform(X_test)
@@ -174,7 +205,7 @@ model.fit(X_train_scaled, y_train_categorical, epochs=1000, shuffle=True, verbos
 
 model_loss, model_accuracy = model.evaluate(X_test_scaled, y_test_categorical, verbose=2)
 print(f"Loss: {model_loss}, Accuracy: {model_accuracy}")
-
+'''
 
 ## ---------------- Stop Time ----------------
 end_time = time()
@@ -182,7 +213,4 @@ elapsed = end_time - start_time
 print(f"Algorithm time: {elapsed} seconds")
 print()
 print()
-
-
-
 
